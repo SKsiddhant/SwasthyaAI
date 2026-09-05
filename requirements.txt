@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Flask-CORS
+Flask-Login
+Flask-Dance
+python-dotenv
+google-genai
+Werkzeug
+gunicorn
+psycopg2-binary

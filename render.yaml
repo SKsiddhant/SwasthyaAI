@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: swasthyaai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: swasthyaai-db
+          property: connectionString
+
+databases:
+  - name: swasthyaai-db
+    plan: free

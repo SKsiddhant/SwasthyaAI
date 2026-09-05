@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SwasthyaAI — Your health assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b1310; --bg-2: #0e1a15; --surface: #121e19; --surface-hi: #18261f;
+    --line: #26362e; --line-soft: #1d2b24;
+    --ink: #e9f1ec; --muted: #97ab9f; --faint: #6a7d72;
+    --accent: #34d399; --accent-deep: #10b981; --accent-ink: #052018; --accent-soft: rgba(52,211,153,0.14);
+    --amber: #f0c274;
+    --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); color: var(--ink); background: var(--bg); height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased; }
+  .app { display: grid; grid-template-columns: 268px 1fr; height: 100vh; }
+
+  /* Sidebar */
+  .side { background: #070f0c; border-right: 1px solid var(--line-soft); color: #cfe0d7; display: flex; flex-direction: column; padding: 20px 16px; }
+  .side .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-weight: 700; font-size: 20px; color: #fff; margin-bottom: 24px; padding: 0 4px; }
+  .side .brand .mark { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); display: grid; place-items: center; color: var(--accent-ink); box-shadow: 0 0 20px -4px rgba(52,211,153,0.55); }
+  .side .brand .mark svg { width: 18px; height: 18px; }
+  .side-label { font-size: 12px; font-weight: 600; color: var(--faint); padding: 0 6px; margin: 6px 0 8px; letter-spacing: .01em; }
+
+  .user-card { display: flex; align-items: center; gap: 10px; padding: 10px 6px 16px; margin-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
+  .user-card .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 16px; flex: none; box-shadow: 0 0 16px -4px rgba(52,211,153,0.5); }
+  .user-card .u-name { font-weight: 700; font-size: 14.5px; color: #fff; }
+  .user-card .u-email { font-size: 12.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 155px; }
+
+  .lang-block { margin-bottom: 22px; }
+  .side select { width: 100%; font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 10px 30px 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2397ab9f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 4l4 4 4-4'/></svg>") no-repeat right 10px center; -webkit-appearance: none; appearance: none; color: var(--ink); cursor: pointer; }
+  .side select:focus { outline: 2px solid var(--accent); }
+  .side select option { background: #16241d; color: var(--ink); }
+
+  .side-btn { width: 100%; display: flex; align-items: center; gap: 10px; font-family: var(--sans); font-size: 14.5px; font-weight: 600; color: #cfe0d7; background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; cursor: pointer; text-align: left; transition: background .15s, border-color .15s; }
+  .side-btn:hover { background: var(--surface); border-color: #3a4d43; }
+  .side-btn svg { width: 17px; height: 17px; flex: none; }
+  .side-note { margin-top: auto; font-size: 12.5px; color: var(--faint); line-height: 1.5; background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 12px; }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; height: 100vh; background-image: radial-gradient(700px 400px at 100% 0, rgba(52,211,153,0.06), transparent 60%); }
+  .topbar { height: 62px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--line-soft); background: rgba(11,19,16,0.7); backdrop-filter: blur(10px); }
+  .topbar .t-title { font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .topbar .t-sub { font-size: 12.5px; color: var(--muted); }
+  .menu-toggle { display: none; background: transparent; border: 1px solid var(--line); border-radius: 9px; padding: 8px; cursor: pointer; }
+  .menu-toggle svg { width: 20px; height: 20px; color: var(--ink); }
+
+  #chat { flex: 1; overflow-y: auto; padding: 26px 24px; display: flex; flex-direction: column; gap: 16px; max-width: 860px; width: 100%; margin: 0 auto; }
+  #chat::-webkit-scrollbar { width: 8px; } #chat::-webkit-scrollbar-thumb { background: #2a3a32; border-radius: 8px; }
+  .msg { display: flex; animation: rise .32s cubic-bezier(.2,.8,.2,1) both; } .msg.user { justify-content: flex-end; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .bubble { max-width: 76%; padding: 12px 16px; border-radius: 16px; font-size: 15.5px; line-height: 1.6; word-wrap: break-word; }
+  .msg.bot .bubble { background: var(--surface-hi); border: 1px solid var(--line-soft); border-bottom-left-radius: 5px; }
+  .msg.user .bubble { background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); font-weight: 500; border-bottom-right-radius: 5px; }
+  .bubble p { margin: 0 0 8px; } .bubble p:last-child { margin: 0; }
+  .bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; } .bubble li { margin: 3px 0; }
+  .bubble strong { font-weight: 700; } .bubble h3 { font-size: 15.5px; margin: 6px 0 4px; }
+
+  .empty { text-align: center; color: var(--muted); margin: auto; max-width: 460px; padding: 20px; }
+  .empty .big { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 18px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; border: 1px solid rgba(52,211,153,0.25); box-shadow: 0 0 40px -10px rgba(52,211,153,0.4); }
+  .empty .big svg { width: 32px; height: 32px; }
+  .empty h2 { font-family: var(--display); font-size: 22px; color: var(--ink); margin-bottom: 6px; }
+  .empty .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+  .chip { font-family: var(--sans); font-size: 13.5px; border: 1px solid var(--line); background: var(--surface-hi); color: var(--ink); padding: 8px 13px; border-radius: 999px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  .typing .bubble { color: var(--muted); font-style: italic; }
+  .dots span { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite both; }
+  .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink { 0%,80%,100%{opacity:.25} 40%{opacity:1} }
+
+  .composer-wrap { flex: none; border-top: 1px solid var(--line-soft); background: rgba(11,19,16,0.7); backdrop-filter: blur(10px); }
+  .composer { max-width: 860px; margin: 0 auto; padding: 16px 24px; display: flex; gap: 10px; align-items: flex-end; }
+  #message { flex: 1; resize: none; font-family: var(--sans); font-size: 15.5px; line-height: 1.4; padding: 13px 15px; border: 1px solid var(--line); border-radius: 13px; outline: none; max-height: 140px; color: var(--ink); background: var(--bg-2); }
+  #message::placeholder { color: var(--faint); }
+  #message:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
+  #send { flex: none; width: 48px; height: 48px; border: none; border-radius: 13px; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); cursor: pointer; display: grid; place-items: center; }
+  #send:hover { box-shadow: 0 8px 22px -10px rgba(52,211,153,0.6); }
+  #send:disabled { background: #2a3a32; color: var(--faint); cursor: not-allowed; box-shadow: none; }
+  #send svg { width: 21px; height: 21px; }
+  .composer-note { max-width: 860px; margin: 0 auto; padding: 0 24px 12px; font-size: 12px; color: var(--faint); text-align: center; }
+
+  .backdrop { display: none; position: fixed; inset: 0; background: rgba(4,10,8,.55); z-index: 30; }
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: fixed; top: 0; left: 0; bottom: 0; width: 268px; z-index: 40; transform: translateX(-100%); transition: transform .22s ease; }
+    .side.open { transform: translateX(0); }
+    .menu-toggle { display: inline-grid; place-items: center; }
+    .backdrop.show { display: block; }
+    .bubble { max-width: 86%; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, .msg, .dots span { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="backdrop" id="backdrop" onclick="closeSide()"></div>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg></span> SwasthyaAI</div>
+
+    <div class="user-card">
+      <div class="avatar" id="userInitial">U</div>
+      <div style="min-width:0"><div class="u-name" id="userName">Loading…</div><div class="u-email" id="userEmail"></div></div>
+    </div>
+
+    <div class="lang-block">
+      <div class="side-label">Response language</div>
+      <select id="language" aria-label="Response language">
+        <option value="English">English</option>
+        <option value="Hindi">हिन्दी</option>
+        <option value="Bengali">বাংলা</option>
+        <option value="Tamil">தமிழ்</option>
+        <option value="Telugu">తెలుగు</option>
+        <option value="Marathi">मराठी</option>
+        <option value="Gujarati">ગુજરાતી</option>
+        <option value="Kannada">ಕನ್ನಡ</option>
+        <option value="Malayalam">മലയാളം</option>
+        <option value="Punjabi">ਪੰਜਾਬੀ</option>
+        <option value="Urdu">اردو</option>
+        <option value="Odia">ଓଡ଼ିଆ</option>
+      </select>
+    </div>
+
+    <div class="side-label">Conversation</div>
+    <button class="side-btn" style="margin-bottom:10px" onclick="clearHistory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Clear history</button>
+    <a class="side-btn" href="/logout" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg> Log out</a>
+
+    <div class="side-note">For awareness only. SwasthyaAI doesn't diagnose or replace a doctor. See a professional for serious symptoms.</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle" onclick="openSide()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/></svg></button>
+        <div><div class="t-title">Health assistant</div><div class="t-sub">Ask anything — your chats are saved</div></div>
+      </div>
+    </div>
+
+    <div id="chat">
+      <div class="empty" id="empty">
+        <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg></div>
+        <h2 id="greeting">Welcome</h2>
+        <p>Ask a health question in any of 12 languages. Try one of these to start:</p>
+        <div class="chips">
+          <button class="chip" onclick="useExample(this)">How can I sleep better?</button>
+          <button class="chip" onclick="useExample(this)">सिरदर्द के घरेलू उपाय</button>
+          <button class="chip" onclick="useExample(this)">Is my diet balanced?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="message" rows="1" placeholder="Ask a health question…" autocomplete="off"></textarea>
+        <button id="send" onclick="sendMessage()" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+      <div class="composer-note">SwasthyaAI can make mistakes. Verify important health decisions with a professional.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById("message");
+  const sendBtn = document.getElementById("send");
+  const chat = document.getElementById("chat");
+  const language = document.getElementById("language");
+  const emptyState = document.getElementById("empty");
+
+  function openSide(){ document.getElementById("side").classList.add("open"); document.getElementById("backdrop").classList.add("show"); }
+  function closeSide(){ document.getElementById("side").classList.remove("open"); document.getElementById("backdrop").classList.remove("show"); }
+
+  input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  function useExample(btn) { input.value = btn.textContent.trim(); sendMessage(); }
+
+  function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function formatMarkdown(raw){
+    const text=escapeHtml(raw.trim()); const lines=text.split("\n"); let html="",inList=null;
+    const inline=(s)=>s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g,"$1<em>$2</em>");
+    const closeList=()=>{if(inList){html+=`</${inList}>`;inList=null;}};
+    for(let line of lines){ const t=line.trim(); if(!t){closeList();continue;} let m;
+      if((m=t.match(/^#{1,3}\s+(.*)/))){closeList();html+=`<h3>${inline(m[1])}</h3>`;}
+      else if((m=t.match(/^[-*•]\s+(.*)/))){if(inList!=="ul"){closeList();html+="<ul>";inList="ul";}html+=`<li>${inline(m[1])}</li>`;}
+      else if((m=t.match(/^\d+[.)]\s+(.*)/))){if(inList!=="ol"){closeList();html+="<ol>";inList="ol";}html+=`<li>${inline(m[1])}</li>`;}
+      else{closeList();html+=`<p>${inline(t)}</p>`;} }
+    closeList(); return html||`<p>${inline(text)}</p>`;
+  }
+  function addMessage(content, type) {
+    if (emptyState) emptyState.style.display = "none";
+    const wrap = document.createElement("div"); wrap.className = "msg " + (type === "user" ? "user" : "bot");
+    const bubble = document.createElement("div"); bubble.className = "bubble";
+    if (type === "user") bubble.textContent = content; else bubble.innerHTML = formatMarkdown(content);
+    wrap.appendChild(bubble); chat.appendChild(wrap); chat.scrollTop = chat.scrollHeight;
+  }
+  async function sendMessage() {
+    const message = input.value.trim(); if (!message) return;
+    addMessage(message, "user"); input.value = ""; input.style.height = "auto"; sendBtn.disabled = true;
+    const typing = document.createElement("div"); typing.className = "msg bot typing"; typing.id = "typing";
+    typing.innerHTML = '<div class="bubble"><span class="dots"><span></span><span></span><span></span></span></div>';
+    chat.appendChild(typing); chat.scrollTop = chat.scrollHeight;
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, language: language.value }) });
+      const data = await res.json();
+      document.getElementById("typing")?.remove();
+      addMessage(data.answer || data.error || "Something went wrong. Please try again.", "bot");
+    } catch (err) { document.getElementById("typing")?.remove(); addMessage("Couldn't reach the server. Check your connection and try again.", "bot"); }
+    sendBtn.disabled = false; input.focus();
+  }
+  async function clearHistory() {
+    if (!confirm("Clear your saved conversation? This can't be undone.")) return;
+    try { await fetch("/api/history/clear", { method: "POST" }); chat.querySelectorAll(".msg").forEach((n) => n.remove()); if (emptyState) emptyState.style.display = ""; closeSide(); }
+    catch (err) { alert("Couldn't clear history. Please try again."); }
+  }
+  async function init() {
+    try { const u = await (await fetch("/api/user")).json();
+      if (u && u.name) { document.getElementById("userName").textContent = u.name; document.getElementById("userEmail").textContent = u.email || ""; document.getElementById("userInitial").textContent = u.name.charAt(0).toUpperCase(); document.getElementById("greeting").textContent = "Namaste, " + u.name.split(" ")[0]; }
+    } catch (e) {}
+    try { const hist = await (await fetch("/api/history")).json();
+      if (Array.isArray(hist) && hist.length) hist.forEach((m) => addMessage(m.content, m.role === "user" ? "user" : "bot"));
+    } catch (e) {}
+  }
+  init();
+</script>
+</body>
+</html>

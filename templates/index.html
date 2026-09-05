@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SwasthyaAI — Health answers in your language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a1210; --bg-2: #0d1814; --surface: #121e19; --surface-hi: #18261f;
+    --line: #26362e; --line-soft: #1d2b24;
+    --ink: #e9f1ec; --muted: #97ab9f; --faint: #6a7d72;
+    --accent: #34d399; --accent-deep: #10b981; --accent-ink: #052018; --accent-soft: rgba(52,211,153,0.14);
+    --amber: #f0c274;
+    --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.55; -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .glow {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(760px 520px at 88% -8%, rgba(52,211,153,0.16), transparent 60%),
+      radial-gradient(680px 520px at -8% 8%, rgba(16,120,90,0.12), transparent 58%),
+      radial-gradient(600px 600px at 50% 120%, rgba(52,211,153,0.08), transparent 60%);
+    animation: drift 16s ease-in-out infinite alternate;
+  }
+  @keyframes drift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(0,-18px,0) scale(1.05); } }
+  a { color: inherit; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  .nav { position: sticky; top: 0; z-index: 30; background: rgba(10,18,16,0.6); backdrop-filter: blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s, background .2s; }
+  .nav.scrolled { border-bottom-color: var(--line-soft); background: rgba(10,18,16,0.82); }
+  .nav-inner { height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.01em; }
+  .brand .mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; color: var(--accent-ink); background: linear-gradient(140deg, var(--accent), var(--accent-deep)); box-shadow: 0 0 22px -4px rgba(52,211,153,0.55); }
+  .brand .mark svg { width: 18px; height: 18px; }
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+  .btn { font-family: var(--sans); font-weight: 600; font-size: 15px; border-radius: 11px; padding: 10px 18px; cursor: pointer; border: 1px solid transparent; transition: background .16s, border-color .16s, transform .08s, box-shadow .16s; }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); }
+  .btn-primary:hover { box-shadow: 0 10px 30px -10px rgba(52,211,153,0.7); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-lg { padding: 14px 26px; font-size: 16px; border-radius: 13px; }
+  .btn-block { width: 100%; }
+  .link-plain { font-weight: 600; font-size: 15px; text-decoration: none; color: var(--muted); padding: 10px 6px; }
+  .link-plain:hover { color: var(--ink); }
+
+  /* Reveal */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* Hero */
+  .hero { padding: 66px 0 30px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 52px; align-items: center; perspective: 1200px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; padding: 6px 13px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.22); margin-bottom: 24px; }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+  .tilt { transform-style: preserve-3d; will-change: transform; transition: transform .18s ease-out; }
+  .hero h1 {
+    font-family: var(--display); font-size: clamp(42px, 6vw, 66px); line-height: 1.0; letter-spacing: -0.025em; font-weight: 800;
+    color: #eafff6;
+    text-shadow:
+      0 1px 0 #12463218, 0 2px 0 #0f3b2b, 0 3px 0 #0d3626, 0 4px 0 #0b3122,
+      0 5px 0 #0a2c1e, 0 6px 0 #08271b, 0 8px 20px rgba(0,0,0,0.55);
+    transform: translateZ(40px);
+  }
+  .hero h1 .native { display: block; margin-top: 14px; font-size: 0.55em; font-weight: 600; color: var(--accent); text-shadow: 0 2px 0 #0b3122, 0 4px 14px rgba(0,0,0,0.5); }
+  .hero p.lead { margin-top: 22px; font-size: 18.5px; color: var(--muted); max-width: 34ch; transform: translateZ(20px); }
+  .hero-cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; transform: translateZ(24px); }
+  .assurances { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 16px 26px; transform: translateZ(12px); }
+  .assurance { display: flex; align-items: center; gap: 9px; font-size: 14.5px; color: var(--muted); font-weight: 500; }
+  .assurance svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+
+  /* Chat card */
+  .chat-card { background: linear-gradient(180deg, rgba(24,38,31,0.92), rgba(17,28,23,0.94)); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 50px 100px -50px rgba(0,0,0,0.95), 0 0 70px -34px rgba(52,211,153,0.3); transform: translateZ(60px); }
+  .chat-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft); background: linear-gradient(180deg, rgba(52,211,153,0.07), transparent); }
+  .chat-head .who { display: flex; align-items: center; gap: 10px; }
+  .chat-head .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 0 18px -4px rgba(52,211,153,0.6); }
+  .chat-head .avatar svg { width: 19px; height: 19px; }
+  .chat-head .title { font-family: var(--display); font-weight: 700; font-size: 15.5px; }
+  .chat-head .status { font-size: 12.5px; color: var(--accent); font-weight: 600; }
+  .lang-select { font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 8px 30px 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-hi) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2397ab9f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 4l4 4 4-4'/></svg>") no-repeat right 10px center; -webkit-appearance: none; appearance: none; cursor: pointer; color: var(--ink); max-width: 140px; }
+  .lang-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .lang-select option { background: #16241d; color: var(--ink); }
+  #chat { height: 342px; overflow-y: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; }
+  #chat::-webkit-scrollbar { width: 8px; } #chat::-webkit-scrollbar-thumb { background: #2a3a32; border-radius: 8px; }
+  .msg { display: flex; animation: rise .35s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .msg.user { justify-content: flex-end; }
+  .bubble { max-width: 82%; padding: 11px 15px; border-radius: 15px; font-size: 15px; line-height: 1.55; word-wrap: break-word; }
+  .msg.bot .bubble { background: var(--surface-hi); color: var(--ink); border: 1px solid var(--line-soft); border-bottom-left-radius: 5px; }
+  .msg.user .bubble { background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); font-weight: 500; border-bottom-right-radius: 5px; }
+  .bubble p { margin: 0 0 8px; } .bubble p:last-child { margin: 0; }
+  .bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; } .bubble li { margin: 2px 0; }
+  .bubble strong { font-weight: 700; } .bubble h3 { font-size: 15px; margin: 6px 0 4px; }
+  .caret::after { content: "▍"; color: var(--accent); animation: blink 1s steps(1) infinite; }
+  .typing .bubble { color: var(--muted); font-style: italic; }
+  .dots span { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite both; }
+  .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink { 0%,80%,100%{opacity:.25} 40%{opacity:1} }
+  .examples { display: flex; gap: 8px; padding: 0 18px 14px; flex-wrap: wrap; }
+  .chip { font-family: var(--sans); font-size: 13.5px; border: 1px solid var(--line); background: var(--surface-hi); color: var(--ink); padding: 7px 12px; border-radius: 999px; cursor: pointer; transition: border-color .15s, background .15s, transform .1s; }
+  .chip:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
+  .composer { display: flex; gap: 10px; align-items: flex-end; padding: 14px 16px 16px; border-top: 1px solid var(--line-soft); }
+  #message { flex: 1; resize: none; font-family: var(--sans); font-size: 15px; line-height: 1.4; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; outline: none; max-height: 120px; color: var(--ink); background: var(--bg-2); }
+  #message::placeholder { color: var(--faint); }
+  #message:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
+  #send { flex: none; width: 46px; height: 46px; border: none; border-radius: 12px; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); color: var(--accent-ink); cursor: pointer; display: grid; place-items: center; transition: box-shadow .16s; }
+  #send:hover { box-shadow: 0 8px 22px -10px rgba(52,211,153,0.7); }
+  #send:disabled { background: #2a3a32; color: var(--faint); cursor: not-allowed; box-shadow: none; }
+  #send svg { width: 20px; height: 20px; }
+
+  /* Section shell */
+  .section { padding: 70px 0; }
+  .sec-head { max-width: 640px; margin-bottom: 44px; }
+  .sec-kicker { color: var(--accent); font-weight: 600; font-size: 14.5px; margin-bottom: 12px; }
+  .sec-title { font-family: var(--display); font-size: clamp(28px, 3.6vw, 40px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 700; }
+  .sec-sub { color: var(--muted); font-size: 17px; margin-top: 14px; }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .step { position: relative; background: var(--surface); border: 1px solid var(--line-soft); border-radius: 18px; padding: 26px 24px; transition: border-color .2s, transform .2s; }
+  .step:hover { border-color: var(--line); transform: translateY(-3px); }
+  .step .n { font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent-ink); width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(140deg, var(--accent), var(--accent-deep)); margin-bottom: 18px; box-shadow: 0 0 18px -6px rgba(52,211,153,0.6); }
+  .step h3 { font-family: var(--display); font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+  .step p { color: var(--muted); font-size: 15px; }
+
+  /* Language band */
+  .lang-band { border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: linear-gradient(180deg, rgba(52,211,153,0.04), transparent); padding: 40px 0; overflow: hidden; }
+  .marquee { display: flex; gap: 14px; width: max-content; animation: scroll 34s linear infinite; }
+  .marquee:hover { animation-play-state: paused; }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+  .lang-pill { font-family: var(--display); font-size: 22px; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px; padding: 12px 22px; white-space: nowrap; }
+  .lang-pill span { color: var(--faint); font-family: var(--sans); font-size: 13px; font-weight: 500; margin-left: 10px; }
+
+  /* Safety */
+  .safety { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
+  .safety-points { display: flex; flex-direction: column; gap: 18px; }
+  .spoint { display: flex; gap: 14px; }
+  .spoint .ic { width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); border: 1px solid rgba(52,211,153,0.25); color: var(--accent); }
+  .spoint .ic svg { width: 21px; height: 21px; }
+  .spoint h4 { font-size: 16.5px; font-weight: 700; margin-bottom: 3px; }
+  .spoint p { color: var(--muted); font-size: 14.5px; }
+  .safety-card { background: rgba(240,194,116,0.06); border: 1px solid rgba(240,194,116,0.25); border-radius: 18px; padding: 26px; }
+  .safety-card .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(240,194,116,0.12); color: var(--amber); margin-bottom: 16px; }
+  .safety-card .ic svg { width: 22px; height: 22px; }
+  .safety-card h4 { font-family: var(--display); font-size: 19px; margin-bottom: 8px; }
+  .safety-card p { color: #e7c78f; font-size: 14.5px; line-height: 1.6; }
+
+  /* CTA band */
+  .cta-band { text-align: center; padding: 76px 0; }
+  .cta-band .box { background: linear-gradient(160deg, rgba(52,211,153,0.14), rgba(16,120,90,0.06)); border: 1px solid rgba(52,211,153,0.25); border-radius: 24px; padding: 54px 30px; box-shadow: 0 0 80px -40px rgba(52,211,153,0.5); }
+  .cta-band h2 { font-family: var(--display); font-size: clamp(28px, 3.8vw, 42px); font-weight: 700; letter-spacing: -0.02em; }
+  .cta-band p { color: var(--muted); font-size: 17px; margin: 14px auto 28px; max-width: 46ch; }
+
+  .footer { border-top: 1px solid var(--line-soft); padding: 30px 0; color: var(--faint); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; z-index: 60; background: rgba(4,10,8,0.68); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--line); width: 100%; max-width: 420px; border-radius: 20px; box-shadow: 0 40px 90px -30px rgba(0,0,0,0.9); overflow: hidden; animation: pop .18s ease-out; }
+  @keyframes pop { from { transform: translateY(10px) scale(.97); opacity: 0; } }
+  .modal-head { padding: 24px 24px 0; } .modal-head h2 { font-family: var(--display); font-size: 23px; font-weight: 700; } .modal-head p { color: var(--muted); font-size: 14.5px; margin-top: 4px; }
+  .modal-body { padding: 20px 24px 24px; }
+  .field { margin-bottom: 14px; } .field label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+  .field input { width: 100%; font-family: var(--sans); font-size: 15px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; outline: none; color: var(--ink); background: var(--bg-2); }
+  .field input::placeholder { color: var(--faint); } .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
+  .form-error { display: none; background: rgba(220,80,72,0.12); color: #f2a6a1; border: 1px solid rgba(220,80,72,0.35); padding: 9px 12px; border-radius: 9px; font-size: 14px; margin-bottom: 12px; } .form-error.show { display: block; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 13px; margin: 16px 0; } .divider::before, .divider::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+  .google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-hi); color: var(--ink); font-family: var(--sans); font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer; } .google-btn:hover { border-color: #3a4d43; background: #1c2b24; } .google-btn svg { width: 18px; height: 18px; }
+  .modal-foot { text-align: center; font-size: 14px; color: var(--muted); margin-top: 16px; } .modal-foot button { background: none; border: none; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 14px; font-family: var(--sans); }
+  .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; } .modal-wrap { position: relative; }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 36px; perspective: none; }
+    .tilt { transform: none !important; }
+    .hero h1, .hero p.lead, .hero-cta, .assurances, .chat-card { transform: none; }
+    .steps { grid-template-columns: 1fr; } .safety { grid-template-columns: 1fr; gap: 26px; }
+    .nav .hide-sm { display: none; }
+  }
+  @media (max-width: 520px) { .wrap { padding: 0 16px; } #chat { height: 300px; } .section { padding: 52px 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .glow, .eyebrow .dot { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .marquee { animation: none; }
+    .tilt { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<nav class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg></span> SwasthyaAI</div>
+    <div class="nav-actions">
+      <a href="#how" class="link-plain hide-sm">How it works</a>
+      <button class="btn btn-ghost" onclick="openAuth('login')">Log in</button>
+      <button class="btn btn-primary" onclick="openAuth('register')">Sign up free</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid" id="heroGrid">
+    <div class="tilt" id="tiltCopy">
+      <span class="eyebrow"><span class="dot"></span> 12 Indian languages</span>
+      <h1>Health answers in your language.<span class="native">आपकी भाषा में सेहत की जानकारी</span></h1>
+      <p class="lead">Ask a health question and get clear, calm guidance you can actually understand. Free to try, no sign-up needed.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary btn-lg" onclick="document.getElementById('message').focus()">Ask a question</button>
+        <button class="btn btn-ghost btn-lg" onclick="openAuth('register')">Save your chats</button>
+      </div>
+      <div class="assurances">
+        <span class="assurance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Never a diagnosis</span>
+        <span class="assurance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Private to you</span>
+        <span class="assurance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Answers in seconds</span>
+      </div>
+    </div>
+
+    <div class="tilt" id="tiltCard">
+      <div class="chat-card">
+        <div class="chat-head">
+          <div class="who"><span class="avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg></span><div><div class="title">SwasthyaAI</div><div class="status">● Online</div></div></div>
+          <select id="language" class="lang-select" aria-label="Response language">
+            <option value="English">English</option><option value="Hindi">हिन्दी</option><option value="Bengali">বাংলা</option><option value="Tamil">தமிழ்</option><option value="Telugu">తెలుగు</option><option value="Marathi">मराठी</option><option value="Gujarati">ગુજરાતી</option><option value="Kannada">ಕನ್ನಡ</option><option value="Malayalam">മലയാളം</option><option value="Punjabi">ਪੰਜਾਬੀ</option><option value="Urdu">اردو</option><option value="Odia">ଓଡ଼ିଆ</option>
+          </select>
+        </div>
+        <div id="chat"></div>
+        <div class="examples" id="examples">
+          <button class="chip" onclick="useExample(this)">What foods help with acidity?</button>
+          <button class="chip" onclick="useExample(this)">बुखार में क्या करें?</button>
+          <button class="chip" onclick="useExample(this)">How much water should I drink?</button>
+        </div>
+        <div class="composer">
+          <textarea id="message" rows="1" placeholder="Ask a health question…" autocomplete="off"></textarea>
+          <button id="send" onclick="sendMessage()" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-kicker">How it works</div>
+      <div class="sec-title">Three steps to a clearer answer</div>
+      <p class="sec-sub">No forms, no jargon. Ask the way you'd ask a knowledgeable friend.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="n">1</div><h3>Ask in your language</h3><p>Type your question in any of 12 Indian languages — or mix them. SwasthyaAI understands.</p></div>
+      <div class="step reveal"><div class="n">2</div><h3>Understand the answer</h3><p>Get calm, plain-language guidance in short points — never a wall of medical jargon.</p></div>
+      <div class="step reveal"><div class="n">3</div><h3>Know when to act</h3><p>For anything serious, it clearly points you toward a qualified doctor. No false certainty.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="lang-band">
+  <div class="marquee" id="marquee"></div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="safety">
+      <div>
+        <div class="sec-head reveal" style="margin-bottom:28px">
+          <div class="sec-kicker">Built to be safe</div>
+          <div class="sec-title">Awareness, not diagnosis</div>
+          <p class="sec-sub">SwasthyaAI is designed to inform and reassure — with clear limits.</p>
+        </div>
+        <div class="safety-points">
+          <div class="spoint reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><h4>Private to you</h4><p>Your conversations are tied to your account and not shared or sold.</p></div></div>
+          <div class="spoint reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><h4>No guessing at conditions</h4><p>It won't tell you what you "have" — it explains, and defers to professionals.</p></div></div>
+          <div class="spoint reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg></div><div><h4>Points you to care</h4><p>Serious or worsening symptoms get a clear nudge to see a doctor, fast.</p></div></div>
+        </div>
+      </div>
+      <div class="safety-card reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+        <h4>A note on safety</h4>
+        <p>SwasthyaAI shares general health information for awareness only. It does not diagnose conditions or replace a doctor. For serious or worsening symptoms, please see a qualified medical professional.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap">
+    <div class="box reveal">
+      <h2>Your health questions, answered simply.</h2>
+      <p>Start a conversation now — or create a free account to keep your chats.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-lg" onclick="scrollToChat()">Try it now</button>
+        <button class="btn btn-ghost btn-lg" onclick="openAuth('register')">Create free account</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer wrap">
+  <span>© <span id="year"></span> SwasthyaAI — health awareness for everyone.</span>
+  <span>Built for India, in your language.</span>
+</footer>
+
+<div class="overlay" id="authOverlay" onclick="if(event.target===this) closeAuth()">
+  <div class="modal-wrap"><div class="modal">
+    <button class="modal-close" onclick="closeAuth()" aria-label="Close">×</button>
+    <div class="modal-head"><h2 id="authTitle">Welcome back</h2><p id="authSub">Log in to save and revisit your conversations.</p></div>
+    <div class="modal-body">
+      <div class="form-error" id="authError"></div>
+      <div class="field" id="nameField" style="display:none;"><label for="authName">Name</label><input id="authName" type="text" placeholder="Your name" /></div>
+      <div class="field"><label for="authEmail">Email</label><input id="authEmail" type="email" placeholder="you@example.com" /></div>
+      <div class="field"><label for="authPassword">Password</label><input id="authPassword" type="password" placeholder="••••••••" /></div>
+      <button class="btn btn-primary btn-block" id="authSubmit" onclick="submitAuth()">Log in</button>
+      <div class="divider">or</div>
+      <a href="/login/google" class="google-btn"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 0 0-9.82 6.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/></svg> Continue with Google</a>
+      <div class="modal-foot"><span id="switchPrompt">New to SwasthyaAI?</span> <button id="switchBtn" onclick="toggleAuthMode()">Create an account</button></div>
+    </div>
+  </div></div>
+</div>
+
+<script>
+  const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("year").textContent = new Date().getFullYear();
+  const input = document.getElementById("message");
+  const sendBtn = document.getElementById("send");
+  const chat = document.getElementById("chat");
+  const language = document.getElementById("language");
+
+  /* Nav shadow on scroll */
+  const nav = document.getElementById("nav");
+  addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 8));
+
+  /* Reveal on scroll */
+  const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.14 });
+  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+  /* Language marquee */
+  const langs = [["नमस्ते","Hindi"],["வணக்கம்","Tamil"],["নমস্কার","Bengali"],["నమస్కారం","Telugu"],["ನಮಸ್ಕಾರ","Kannada"],["നമസ്കാരം","Malayalam"],["નમસ્તે","Gujarati"],["नमस्कार","Marathi"],["ਸਤ ਸ੍ਰੀ ਅਕਾਲ","Punjabi"],["آداب","Urdu"],["ନମସ୍କାର","Odia"],["Hello","English"]];
+  const mq = document.getElementById("marquee");
+  const build = () => langs.map(([w,n]) => `<div class="lang-pill">${w}<span>${n}</span></div>`).join("");
+  mq.innerHTML = build() + build();
+
+  /* Mouse parallax tilt */
+  if (!REDUCED && matchMedia("(pointer:fine)").matches) {
+    const grid = document.getElementById("heroGrid");
+    const copy = document.getElementById("tiltCopy");
+    const card = document.getElementById("tiltCard");
+    grid.addEventListener("mousemove", (e) => {
+      const r = grid.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      copy.style.transform = `rotateY(${x*4}deg) rotateX(${-y*4}deg)`;
+      card.style.transform = `rotateY(${x*7}deg) rotateX(${-y*7}deg)`;
+    });
+    grid.addEventListener("mouseleave", () => { copy.style.transform = ""; card.style.transform = ""; });
+  }
+
+  /* Markdown + messages */
+  function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function formatMarkdown(raw){
+    const text=escapeHtml(raw.trim()); const lines=text.split("\n"); let html="",inList=null;
+    const inline=(s)=>s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g,"$1<em>$2</em>");
+    const closeList=()=>{if(inList){html+=`</${inList}>`;inList=null;}};
+    for(let line of lines){ const t=line.trim(); if(!t){closeList();continue;} let m;
+      if((m=t.match(/^#{1,3}\s+(.*)/))){closeList();html+=`<h3>${inline(m[1])}</h3>`;}
+      else if((m=t.match(/^[-*•]\s+(.*)/))){if(inList!=="ul"){closeList();html+="<ul>";inList="ul";}html+=`<li>${inline(m[1])}</li>`;}
+      else if((m=t.match(/^\d+[.)]\s+(.*)/))){if(inList!=="ol"){closeList();html+="<ol>";inList="ol";}html+=`<li>${inline(m[1])}</li>`;}
+      else{closeList();html+=`<p>${inline(t)}</p>`;} }
+    closeList(); return html||`<p>${inline(text)}</p>`;
+  }
+  function addMessage(content, type) {
+    const wrap = document.createElement("div"); wrap.className = "msg " + (type === "user" ? "user" : "bot");
+    const bubble = document.createElement("div"); bubble.className = "bubble";
+    if (type === "user") bubble.textContent = content; else bubble.innerHTML = formatMarkdown(content);
+    wrap.appendChild(bubble); chat.appendChild(wrap); chat.scrollTop = chat.scrollHeight; return bubble;
+  }
+
+  /* Auto typing demo (cosmetic, client-side only) */
+  let demoDone = false, userInteracted = false;
+  const greeting = "Namaste! I'm SwasthyaAI. Ask me anything about staying healthy — in whichever language you're comfortable with.";
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+  async function typeInto(bubble, text){ bubble.textContent=""; bubble.classList.add("caret"); for(let i=0;i<text.length;i++){ if(userInteracted) break; bubble.textContent=text.slice(0,i+1); chat.scrollTop=chat.scrollHeight; await sleep(14); } bubble.classList.remove("caret"); }
+  async function runDemo(){
+    addMessage(greeting, "bot");
+    if (REDUCED) {
+      addMessage("How much water should I drink daily?", "user");
+      addMessage("Most adults do well with about **2 to 2.5 litres** a day.\n\n- Drink more in **hot weather** or after exercise\n- Pale-yellow urine is a good sign\n\nWith a kidney or heart condition, check with your doctor.", "bot");
+      demoDone = true; return;
+    }
+    await sleep(700); if (userInteracted) return;
+    const ub = addMessage("", "user"); await typeInto(ub, "How much water should I drink daily?"); if (userInteracted) return;
+    await sleep(350);
+    const t = document.createElement("div"); t.className="msg bot typing"; t.id="demoTyping";
+    t.innerHTML='<div class="bubble"><span class="dots"><span></span><span></span><span></span></span></div>';
+    chat.appendChild(t); chat.scrollTop=chat.scrollHeight; await sleep(1100); t.remove(); if (userInteracted) return;
+    addMessage("Most adults do well with about **2 to 2.5 litres** a day.\n\n- Drink more in **hot weather** or after exercise\n- Pale-yellow urine is a good sign\n\nWith a kidney or heart condition, check with your doctor.", "bot");
+    demoDone = true;
+  }
+
+  /* Composer */
+  input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
+  function markInteracted(){ userInteracted = true; }
+  input.addEventListener("focus", markInteracted);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  function useExample(btn) { userInteracted = true; input.value = btn.textContent.trim(); input.focus(); sendMessage(); }
+  function scrollToChat(){ document.getElementById("heroGrid").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>input.focus(),500); }
+
+  async function sendMessage() {
+    const message = input.value.trim(); if (!message) return;
+    userInteracted = true;
+    document.getElementById("examples").style.display = "none";
+    addMessage(message, "user"); input.value = ""; input.style.height = "auto"; sendBtn.disabled = true;
+    const typing = document.createElement("div"); typing.className = "msg bot typing"; typing.id = "typing";
+    typing.innerHTML = '<div class="bubble"><span class="dots"><span></span><span></span><span></span></span></div>';
+    chat.appendChild(typing); chat.scrollTop = chat.scrollHeight;
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, language: language.value }) });
+      const data = await res.json(); document.getElementById("typing")?.remove();
+      addMessage(data.answer || data.error || "Something went wrong. Please try again.", "bot");
+    } catch (err) { document.getElementById("typing")?.remove(); addMessage("Couldn't reach the server. Check your connection and try again.", "bot"); }
+    sendBtn.disabled = false; input.focus();
+  }
+
+  /* Auth modal */
+  let authMode = "login";
+  const overlay = document.getElementById("authOverlay");
+  function openAuth(mode) { authMode = mode; applyAuthMode(); overlay.classList.add("open"); setTimeout(() => document.getElementById("authEmail").focus(), 50); }
+  function closeAuth() { overlay.classList.remove("open"); hideError(); }
+  function toggleAuthMode() { authMode = authMode === "login" ? "register" : "login"; applyAuthMode(); }
+  function applyAuthMode() {
+    const isReg = authMode === "register";
+    document.getElementById("nameField").style.display = isReg ? "block" : "none";
+    document.getElementById("authTitle").textContent = isReg ? "Create your account" : "Welcome back";
+    document.getElementById("authSub").textContent = isReg ? "Sign up to save and revisit your conversations." : "Log in to save and revisit your conversations.";
+    document.getElementById("authSubmit").textContent = isReg ? "Create account" : "Log in";
+    document.getElementById("switchPrompt").textContent = isReg ? "Already have an account?" : "New to SwasthyaAI?";
+    document.getElementById("switchBtn").textContent = isReg ? "Log in" : "Create an account"; hideError();
+  }
+  function showError(msg){ const el=document.getElementById("authError"); el.textContent=msg; el.classList.add("show"); }
+  function hideError(){ document.getElementById("authError").classList.remove("show"); }
+  async function submitAuth() {
+    hideError();
+    const name = document.getElementById("authName").value.trim();
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    if (!email || !password || (authMode === "register" && !name)) { showError("Please fill in all fields."); return; }
+    const url = authMode === "register" ? "/api/register" : "/api/login";
+    const body = authMode === "register" ? { name, email, password } : { email, password };
+    try { const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await res.json();
+      if (res.ok) window.location.href = "/dashboard"; else showError(data.error || "Something went wrong.");
+    } catch (err) { showError("Couldn't reach the server. Please try again."); }
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAuth(); });
+
+  runDemo();
+</script>
+</body>
+</html>
