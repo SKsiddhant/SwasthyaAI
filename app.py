@@ -26,6 +26,13 @@ if os.getenv("OAUTHLIB_INSECURE_TRANSPORT"):
 # How many past messages to feed back to the model for context.
 HISTORY_TURNS = 10
 
+# Chat input limits. The chat endpoint is open to guests and spends Gemini quota.
+MAX_MESSAGE_CHARS = 2000
+LANGUAGES = {
+    "English", "Hindi", "Bengali", "Tamil", "Telugu", "Marathi",
+    "Gujarati", "Kannada", "Malayalam", "Punjabi", "Urdu", "Odia",
+}  # same list the UI offers; anything else would be pasted into the model prompt verbatim
+
 app = Flask(__name__)
 
 # Trust the host's proxy so url_for / OAuth callbacks use https in production.
@@ -37,7 +44,20 @@ database_url = os.getenv("DATABASE_URL", "sqlite:///healthbot.db")
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me-in-production")
+# A known fallback key would let anyone forge a login session, so refuse to start without one.
+secret_key = os.getenv("SECRET_KEY")
+if not secret_key:
+    if os.getenv("FLASK_DEBUG") == "1":
+        secret_key = "dev-only-insecure-key"
+    else:
+        raise RuntimeError(
+            "SECRET_KEY is not set. Generate one with "
+            "`python -c \"import secrets; print(secrets.token_hex(32))\"` and add it to .env "
+            "(or set FLASK_DEBUG=1 for throwaway local development)."
+        )
+app.config["SECRET_KEY"] = secret_key
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # blocks cross-site form posts riding the login cookie
+app.config["SESSION_COOKIE_SECURE"] = True      # `python app.py` turns this off for plain-http local dev
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["GOOGLE_OAUTH_CLIENT_ID"] = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
@@ -68,7 +88,7 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 # ----------------------------------------------------------------------------
@@ -201,8 +221,8 @@ def google_authorized():
 
         return redirect(url_for("dashboard"))
 
-    except Exception as e:
-        print(f"Google OAuth error: {e}")
+    except Exception:
+        app.logger.exception("Google OAuth error")
         return redirect(url_for("home"))
 
 
@@ -232,11 +252,15 @@ def build_history(user_id):
 def chat():
     data = request.get_json(silent=True) or {}
 
-    message = (data.get("message") or "").strip()
-    language = data.get("language", "English")
+    message = (data.get("message") or "").strip() if isinstance(data.get("message"), str) else ""
+    language = data.get("language")
+    if language not in LANGUAGES:
+        language = "English"
 
     if not message:
         return jsonify({"error": "Message is required"}), 400
+    if len(message) > MAX_MESSAGE_CHARS:
+        return jsonify({"error": f"Message is too long (max {MAX_MESSAGE_CHARS} characters)"}), 400
 
     # Only signed-in users get remembered context and saved history.
     history = ""
@@ -245,11 +269,10 @@ def chat():
 
     try:
         answer = ask_gemini(message, history, language)
-    except Exception as e:
-        print("GEMINI ERROR:", str(e))
-        return jsonify(
-            {"error": "AI service unavailable", "details": str(e)}
-        ), 500
+    except Exception:
+        # Log the cause server-side; the raw error can include request details we shouldn't show users.
+        app.logger.exception("Gemini request failed")
+        return jsonify({"error": "AI service unavailable. Please try again."}), 500
 
     # Persist the exchange for signed-in users.
     if current_user.is_authenticated:
@@ -306,7 +329,12 @@ def user():
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # Local development only (production runs under gunicorn, see Procfile).
+    app.config["SESSION_COOKIE_SECURE"] = False  # plain http://localhost
+    # The Werkzeug debugger allows remote code execution, so it is opt-in and the server
+    # listens on localhost only. Use FLASK_DEBUG=1 and/or HOST=0.0.0.0 deliberately.
+    app.run(
+        debug=os.getenv("FLASK_DEBUG") == "1",
+        host=os.getenv("HOST", "127.0.0.1"),
+        port=int(os.getenv("PORT", "5000")),
+    )
