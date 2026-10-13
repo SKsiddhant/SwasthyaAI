@@ -64,7 +64,10 @@ app.config["GOOGLE_OAUTH_CLIENT_ID"] = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
 app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
 
 db.init_app(app)
-CORS(app)
+# The UI is served by this app (same origin), so CORS is off unless origins are listed explicitly.
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors_origins:
+    CORS(app, origins=_cors_origins)
 
 login_manager = LoginManager()
 # Redirect unauthenticated users to the landing page, not the POST-only API.
