@@ -67,3 +67,10 @@ def test_ai_failure_does_not_leak_details(client, monkeypatch):
     r = client.post("/api/chat", json={"message": "hi"})
     assert r.status_code == 500
     assert "abc123" not in r.get_data(as_text=True) and "details" not in r.json
+
+
+def test_empty_ai_answer_is_not_saved(client, monkeypatch):
+    monkeypatch.setattr(app_module, "ask_gemini", lambda *a, **k: None)
+    assert register(client, _email()).status_code == 201
+    assert client.post("/api/chat", json={"message": "hello"}).status_code == 502
+    assert client.get("/api/history").json == []

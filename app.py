@@ -277,6 +277,10 @@ def chat():
         app.logger.exception("Gemini request failed")
         return jsonify({"error": "AI service unavailable. Please try again."}), 500
 
+    # Gemini returns no text when a reply is blocked; don't save or return an empty/None answer.
+    if not isinstance(answer, str) or not answer.strip():
+        return jsonify({"error": "The AI service returned no answer. Please rephrase and try again."}), 502
+
     # Persist the exchange for signed-in users.
     if current_user.is_authenticated:
         db.session.add(
