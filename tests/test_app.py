@@ -74,3 +74,21 @@ def test_empty_ai_answer_is_not_saved(client, monkeypatch):
     assert register(client, _email()).status_code == 201
     assert client.post("/api/chat", json={"message": "hello"}).status_code == 502
     assert client.get("/api/history").json == []
+
+
+def test_register_rejects_short_password_and_duplicate_email(client):
+    email = _email()
+    assert register(client, email, password="123").status_code == 400
+    assert register(client, email).status_code == 201
+    client.get("/logout")
+    assert register(client, email.upper()).status_code == 409  # emails are case-insensitive
+
+
+def test_clear_history_and_user_endpoint(client):
+    email = _email()
+    assert register(client, email).status_code == 201
+    assert client.get("/api/user").json["email"] == email
+    client.post("/api/chat", json={"message": "hi"})
+    assert len(client.get("/api/history").json) == 2
+    assert client.post("/api/history/clear").status_code == 200
+    assert client.get("/api/history").json == []
