@@ -24,9 +24,17 @@ python app.py
 
 Open http://localhost:5000
 
+`python app.py` listens on localhost only. To use Flask's debugger run
+`FLASK_DEBUG=1 python app.py` (never expose it publicly), and set `HOST=0.0.0.0` only if you
+really need other machines to reach it.
+
+Run the tests with `pip install -r requirements-dev.txt && pytest`.
+
 ## Environment variables
 
 See `.env.example`. You need at minimum a `SECRET_KEY` and a `GEMINI_API_KEY`.
+The app refuses to start without `SECRET_KEY` (unless `FLASK_DEBUG=1`, for throwaway local use),
+because a guessable key would let anyone forge a login session.
 Google sign-in also needs `GOOGLE_OAUTH_CLIENT_ID` and
 `GOOGLE_OAUTH_CLIENT_SECRET`. For local OAuth over http, set
 `OAUTHLIB_INSECURE_TRANSPORT=1` (never in production).
